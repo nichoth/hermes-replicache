@@ -1,6 +1,8 @@
-# replicache demo
+# replicache demo [![Netlify Status](https://api.netlify.com/api/v1/badges/6c0bb17d-79b5-426e-bfe4-257d5dcf7f79/deploy-status)](https://app.netlify.com/sites/hermes-replicache/deploys)
 
 Trying replicache.
+
+[See this demo live](https://hermes-replicache.netlify.app/)
 
 Create application state & a replicache instance in the file [./src/state.ts](./src/state.ts). This is where we create methods for the view to call, and subscribe to replicache.
 
