@@ -6,18 +6,13 @@ import {
 } from '@nichoth/components/htm/button-outline'
 import { State } from './state.js'
 import Router from './routes/index.js'
-import Debug from '@nichoth/debug'
 import '@nichoth/components/button-outline.css'
 import './style.css'
 
 const router = Router()
 const state = await State()
 
-const debug = Debug()
-
 export function Example () {
-    debug('render...', state, state.count.value)
-
     const match = router.match(state.route.value)
 
     if (!match) {
