@@ -1,4 +1,4 @@
-# replicache demo ![tests](https://github.com/nichoth/hermes-replicache/actions/workflows/nodejs.yml/badge.svg)
+# replicache demo
 
 Trying replicache.
 
