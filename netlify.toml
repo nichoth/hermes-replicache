@@ -1,0 +1,14 @@
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+[build]
+  command = "npm run build"
+  environment = { NODE_VERSION = '18' }
+  functions = "netlify/functions"
+  publish = "public"
