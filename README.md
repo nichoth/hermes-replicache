@@ -2,7 +2,7 @@
 
 Trying replicache.
 
-Create application state & a replicache instance in the file [./src/state.ts](./src/state.ts). This is where we create methods for the view to call and subscribe to replicache.
+Create application state & a replicache instance in the file [./src/state.ts](./src/state.ts). This is where we create methods for the view to call, and subscribe to replicache.
 
 The view is made with [preact](https://preactjs.com/).
 
