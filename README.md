@@ -2,7 +2,7 @@
 
 Trying replicache.
 
-Create application state & a replicache instance in the file [./src/state.ts](./src/state.ts). This exports static functions, creates a state object, and sets up URL routing.
+Create application state & a replicache instance in the file [./src/state.ts](./src/state.ts). This is where we export static functions and subscribe to replicache.
 
 The view is made with [preact](https://preactjs.com/).
 
