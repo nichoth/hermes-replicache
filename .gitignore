@@ -5,4 +5,3 @@ test/*.js
 dist
 .env
 public
-src/license.js
