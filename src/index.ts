@@ -4,20 +4,21 @@ import {
     Primary as ButtonOutlinePrimary,
     ButtonOutline
 } from '@nichoth/components/htm/button-outline'
-import { createDebug } from '@nichoth/debug'
-import { State, Increase, Decrease } from './state.js'
+import { State } from './state.js'
 import Router from './routes/index.js'
+import Debug from '@nichoth/debug'
 import '@nichoth/components/button-outline.css'
 import './style.css'
 
 const router = Router()
-const state = State()
-const debug = createDebug()
+const state = await State()
+
+const debug = Debug()
 
 export function Example () {
-    debug('rendering example...')
+    debug('render...', state, state.count.value)
+
     const match = router.match(state.route.value)
-    const ChildNode = match.action(match, state.route)
 
     if (!match) {
         return html`<div class="404">
@@ -25,14 +26,16 @@ export function Example () {
         </div>`
     }
 
+    const ChildNode = match.action(match, state.route)
+
     function plus (ev) {
         ev.preventDefault()
-        Increase(state)
+        State.Increase(state)
     }
 
     function minus (ev) {
         ev.preventDefault()
-        Decrease(state)
+        State.Decrease(state)
     }
 
     return html`<div>
@@ -45,7 +48,8 @@ export function Example () {
         </ul>
 
         <div>
-            <div>count: ${state.count.value}</div>
+            <div><strong>count: </strong>${state.count.value}</div>
+            <div><strong>idbName: </strong>${state.idbName.value}</div>
             <ul class="count-controls">
                 <li>
                     <${ButtonOutlinePrimary} onClick=${plus}>
@@ -60,7 +64,7 @@ export function Example () {
             </ul>
         </div>
 
-        <${ChildNode} />
+        <${ChildNode} params=${match.params} />
     </div>`
 }
 

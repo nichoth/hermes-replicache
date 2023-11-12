@@ -1,6 +1,7 @@
 import { html } from 'htm/preact'
 import Router from '@nichoth/routes'
 import { HomeRoute } from './home.js'
+import { SpaceRoute } from './space.js'
 
 export default function _Router ():ReturnType<Router> {
     const router = Router()
@@ -25,6 +26,10 @@ export default function _Router ():ReturnType<Router> {
         return () => {
             return html`<h2>ccc</h2>`
         }
+    })
+
+    router.addRoute('/space/:spaceId', () => {
+        return SpaceRoute
     })
 
     return router
