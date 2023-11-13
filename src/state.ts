@@ -4,6 +4,7 @@ import { Replicache } from 'replicache'
 import Debug from '@nichoth/debug'
 import { LICENSE_KEY } from './license.js'
 import { initSpace } from './space.js'
+import { Message } from './types.js'
 
 const debug = Debug('state')
 const SERVER_URL = 'https://replicache-counter-pr-6.onrender.com'
@@ -17,6 +18,7 @@ export async function State ():Promise<{
     route:Signal<string>;
     count:Signal<number>;
     idbName:Signal<string>;
+    messages:Signal<[string, Message][]|null>;
     _replicache:InstanceType<typeof Replicache>;
     _setRoute:(path:string)=>void;
 }> {  // eslint-disable-line indent
@@ -53,7 +55,8 @@ export async function State ():Promise<{
     // If a "poke" message is received, it will pull from the server.
     const ev = new EventSource(evUrl, { withCredentials: false })
     ev.onmessage = async (event) => {
-        debug(event)
+        debug('event', event)
+
         if (event.data === 'poke') {
             debug('poke', event)
             await replicache.pull()
@@ -64,16 +67,36 @@ export async function State ():Promise<{
         _setRoute: onRoute.setRoute.bind(onRoute),
         _replicache: replicache,
         idbName: signal<string>(replicache.idbName),
+        messages: signal<[string, Message][]|null>(null),
         count: signal<number>(0),
         route: signal<string>(location.pathname + location.search)
     }
 
     replicache.subscribe(async (tx) => (await tx.get('count')) ?? '0', {
         onData: (count) => {
-            console.log('onData', count)
+            debug('onData', count)
             state.count.value = parseInt(count as string)
         }
     })
+
+    replicache.subscribe(
+        async (tx) => {
+            const list = (await tx
+                .scan({ prefix: 'message/' })
+                .entries()
+                .toArray()
+            ) as [string, Message][]
+            list.sort(([, { order: a }], [, { order: b }]) => a - b)
+
+            return list
+        },
+        {
+            onData: messages => {
+                debug('messages subscription', messages)
+                state.messages.value = messages
+            }
+        }
+    )
 
     // routes
     onRoute((path:string) => {
