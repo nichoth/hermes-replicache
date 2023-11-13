@@ -1,4 +1,4 @@
-export async function initSpace (serverURL) {
+export async function initSpace (serverURL, setRoute) {
     const { pathname } = window.location
     const paths = pathname.split('/')
     const [, spaceDir, spaceID] = paths
@@ -10,7 +10,7 @@ export async function initSpace (serverURL) {
     }
 
     const newSpaceID = await createSpace(serverURL)
-    window.history.pushState(null, '', `/space/${newSpaceID}`)
+    setRoute(`/space/${newSpaceID}`)
     return newSpaceID
 }
 

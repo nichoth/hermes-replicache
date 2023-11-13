@@ -23,8 +23,7 @@ export async function State ():Promise<{
     _setRoute:(path:string)=>void;
 }> {  // eslint-disable-line indent
     const onRoute = Route()
-
-    const spaceID = await initSpace(SERVER_URL)
+    const spaceID = await initSpace(SERVER_URL, onRoute.setRoute.bind(onRoute))
 
     const replicache = new Replicache({
         name: `alice:${spaceID}`,
@@ -49,11 +48,11 @@ export async function State ():Promise<{
         }
     })
 
-    const evUrl = SERVER_URL + '/api/replicache/poke?spaceID=' + spaceID
+    const eventUrl = SERVER_URL + '/api/replicache/poke?spaceID=' + spaceID
 
     // Replicache "poke" using Server-Sent Events.
     // If a "poke" message is received, it will pull from the server.
-    const ev = new EventSource(evUrl, { withCredentials: false })
+    const ev = new EventSource(eventUrl, { withCredentials: false })
     ev.onmessage = async (event) => {
         debug('event', event)
 
@@ -71,6 +70,9 @@ export async function State ():Promise<{
         count: signal<number>(0),
         route: signal<string>(location.pathname + location.search)
     }
+
+    // @ts-ignore
+    window.state = state
 
     replicache.subscribe(async (tx) => (await tx.get('count')) ?? '0', {
         onData: (count) => {

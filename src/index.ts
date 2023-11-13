@@ -36,10 +36,13 @@ export function Example () {
     return html`<div>
         <h1>hello</h1>
 
-        <ul>
-            <li><a href="/aaa">aaa</a></li>
-            <li><a href="/bbb">bbb</a></li>
-            <li><a href="/ccc">ccc</a></li>
+        <ul class="nav">
+            <li class=${getClass('/aaa')}><a href="/aaa">aaa</a></li>
+            <li class=${getClass('/bbb')}><a href="/bbb">bbb</a></li>
+            <li class=${getClass('/ccc')}><a href="/ccc">ccc</a></li>
+            <li class=${getClass('/messages')}>
+                <a href="/messages">messages</a>
+            </li>
         </ul>
 
         <div>
@@ -59,8 +62,12 @@ export function Example () {
             </ul>
         </div>
 
-        <${ChildNode} params=${match.params} />
+        <${ChildNode} state=${state} params=${match.params} />
     </div>`
 }
 
 render(html`<${Example} />`, document.getElementById('root')!)
+
+function getClass (linkHref:string):string {
+    return location.pathname.includes(linkHref) ? 'active' : ''
+}
