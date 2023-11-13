@@ -7,6 +7,7 @@ export const serverID = 1
 
 async function initDB () {
     console.log('initializing database...')
+
     const db = newDb().adapters.createPgPromise()
 
     await tx(async t => {
