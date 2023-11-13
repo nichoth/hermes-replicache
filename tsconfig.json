@@ -26,7 +26,7 @@
     "declarationMap": true
   },
   "include": [
-    "vendor.d.ts",
+    "global.d.ts",
     "example",
     "src/**/*",
     "test",

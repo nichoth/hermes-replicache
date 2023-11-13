@@ -1,6 +1,6 @@
 {
   "parser": "@typescript-eslint/parser",
-  "ignorePatterns": ["lib.es5.d.ts", "vendor.d.ts"],
+  "ignorePatterns": ["lib.es5.d.ts", "global.d.ts"],
   "parserOptions": {
     "requireConfigFile": false,
     "babelOptions": {

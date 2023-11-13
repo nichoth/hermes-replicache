@@ -1,9 +1,16 @@
 import { Handler, HandlerEvent } from '@netlify/functions'
 import { MutationV1 } from 'replicache'
 import { ITask } from 'pg-promise'
-import { serverID, tx } from '../../../src/db.js'
+import { serverID, tx } from '../db.js'
 // import Pusher from 'pusher'
-import { MessageWithID } from '../../../src/types.js'
+
+type Message = {
+    from: string;
+    content: string;
+    order: number;
+};
+
+type MessageWithID = Message & { id: string };
 
 export const handler:Handler = async function handler (ev:HandlerEvent) {
     if (ev.httpMethod !== 'POST') return { statusCode: 405 }
