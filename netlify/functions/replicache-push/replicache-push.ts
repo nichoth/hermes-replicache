@@ -63,14 +63,15 @@ export const handler:Handler = async function handler (ev:HandlerEvent) {
 
             console.log('Processed mutation in', Date.now() - t1)
         }
+
+        await sendPoke()
+        return { statusCode: 200, body: '{}' }
     } catch (err) {
         console.error(err)
         return { statusCode: 500, body: err.toString() }
     } finally {
         console.log('Processed push in', Date.now() - t0)
     }
-
-    return { statusCode: 200, body: 'hello' }
 }
 
 async function processMutation (
@@ -202,6 +203,6 @@ async function createMessage (
     )
 }
 
-// async function sendPoke () {
-//     // TODO
-// }
+async function sendPoke () {
+    // TODO
+}

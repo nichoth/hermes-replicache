@@ -42,12 +42,6 @@ async function initDB () {
     return db
 }
 
-// async function initDB () {
-//     console.log('initializing database...')
-//     const db = newDb().adapters.createPgPromise()
-//     return db
-// }
-
 function getDB () {
     // Cache the database in the Node global so that it survives HMR.
     if (!global.__db) {
