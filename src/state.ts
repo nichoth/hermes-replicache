@@ -1,10 +1,11 @@
 import { Signal, signal } from '@preact/signals'
 import Route from 'route-event'
-import { Replicache } from 'replicache'
+import { Replicache, WriteTransaction } from 'replicache'
 import Debug from '@nichoth/debug'
+import { nanoid } from 'nanoid'
 import { LICENSE_KEY } from './license.js'
 import { initSpace } from './space.js'
-import { Message } from './types.js'
+import { Message, MessageWithID } from './types.js'
 
 const debug = Debug('state')
 const SERVER_URL = 'https://replicache-counter-pr-6.onrender.com'
@@ -28,8 +29,6 @@ export async function State ():Promise<{
     const replicache = new Replicache({
         name: `alice:${spaceID}`,
         licenseKey: LICENSE_KEY,
-        // pushURL: `${SERVER_URL}/api/replicache/push?spaceID=${spaceID}`,
-        // pullURL: `${SERVER_URL}/api/replicache/pull?spaceID=${spaceID}`,
         pushURL: '/api/replicache-push',
         pullURL: '/api/replicache-pull',
         mutators: {
@@ -46,7 +45,18 @@ export async function State ():Promise<{
                 await tx.put('count', next)
                 tx.put('count', prev - delta)
                 return next
-            }
+            },
+
+            createMessage: async function (
+                tx:WriteTransaction,
+                { id, from, content, order }:MessageWithID
+            ) {
+                await tx.put(`message/${id}`, {
+                    from,
+                    content,
+                    order,
+                })
+            },
         }
     })
 
@@ -119,4 +129,21 @@ State.Increase = function Increase (state:Awaited<ReturnType<typeof State>>) {
 
 State.Decrease = function Decrease (state:Awaited<ReturnType<typeof State>>) {
     state._replicache.mutate.decrement(1)
+}
+
+State.SendMessage = function SendMessage (
+    state:Awaited<ReturnType<typeof State>>,
+    msg:string,
+    from:string
+) {
+    const last = (state.messages.value && (state.messages.value).length &&
+        state.messages.value[state.messages.value.length - 1][1])
+    const order = ((last && last.order) ?? 0) + 1
+
+    state._replicache.mutate.createMessage({
+        id: nanoid(),
+        from,
+        content: msg,
+        order
+    })
 }

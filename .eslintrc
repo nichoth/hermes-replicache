@@ -7,6 +7,7 @@
     }
   },
   "rules": {
+    "dot-notation": ["off"],
     "operator-linebreak": ["off"],
     "multiline-ternary": "off",
     "no-multiple-empty-lines": [

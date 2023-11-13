@@ -8,16 +8,19 @@ const debug = Debug('view')
 export const MessageRoute:FunctionComponent<{
     state:Awaited<ReturnType<typeof State>>
 }> = function ({ state }) {
-    function onSubmit (ev) {
+    function onSubmit (ev:SubmitEvent) {
         ev.preventDefault()
         debug('submit event', ev)
+        const from = (ev.target as HTMLFormElement).elements['from'].value
+        const msg = (ev.target as HTMLFormElement).elements['msg'].value
+        State.SendMessage(state, msg, from)
     }
 
     return html`<div class="message route">
         <div>
             <form onSubmit=${onSubmit}>
-                <input required /> says:${' '}
-                <input required />
+                <input name="from" required /> says:${' '}
+                <input name="msg" required />
                 <input type="submit" />
             </form>
 
