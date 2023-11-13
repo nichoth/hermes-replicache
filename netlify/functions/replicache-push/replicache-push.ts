@@ -2,6 +2,7 @@ import { Handler, HandlerEvent } from '@netlify/functions'
 import { MutationV1 } from 'replicache'
 import { ITask } from 'pg-promise'
 import { serverID, tx } from '../db.js'
+import { headers } from '../util.js'
 // import Pusher from 'pusher'
 
 type Message = {
@@ -13,6 +14,9 @@ type Message = {
 type MessageWithID = Message & { id: string };
 
 export const handler:Handler = async function handler (ev:HandlerEvent) {
+    if (ev.httpMethod === 'OPTIONS') {
+        return { statusCode: 200, headers }
+    }
     if (ev.httpMethod !== 'POST') return { statusCode: 405 }
     const push = JSON.parse(ev.body!)
     console.log('Processing push', push)
