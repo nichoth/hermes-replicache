@@ -3,7 +3,7 @@
     "listFiles": true,
     "module": "NodeNext",
     "target": "ES2022",
-    "types": ["vite/client"],
+    "types": ["node", "vite/client"],
     "moduleResolution": "nodenext",
     "esModuleInterop": false,
     "lib": ["ES2022", "DOM", "WebWorker"],
@@ -26,6 +26,7 @@
     "declarationMap": true
   },
   "include": [
+    "vendor.d.ts",
     "example",
     "src/**/*",
     "test",

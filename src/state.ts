@@ -29,6 +29,8 @@ export async function State ():Promise<{
     const replicache = new Replicache({
         name: `alice:${spaceID}`,
         licenseKey: LICENSE_KEY,
+        // pushURL: `${SERVER_URL}/api/replicache/push?spaceID=${spaceID}`,
+        // pullURL: `${SERVER_URL}/api/replicache/pull?spaceID=${spaceID}`,
         pushURL: '/api/replicache-push',
         pullURL: '/api/replicache-pull',
         mutators: {
