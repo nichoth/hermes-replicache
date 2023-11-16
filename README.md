@@ -13,3 +13,8 @@ In the view code, we call the `State.Method` functions with a state instance. In
 -------
 
 [See docs](https://doc.replicache.dev/byob/render-ui) for reference about making the backend.
+
+## develop
+```sh
+npm start
+```
