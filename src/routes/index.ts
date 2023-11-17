@@ -2,6 +2,7 @@ import { html } from 'htm/preact'
 import Router from '@nichoth/routes'
 import { HomeRoute } from './home.js'
 import { SpaceRoute } from './space.js'
+import { MessageRoute } from './messages.js'
 
 export default function _Router ():ReturnType<Router> {
     const router = Router()
@@ -30,6 +31,10 @@ export default function _Router ():ReturnType<Router> {
 
     router.addRoute('/space/:spaceId', () => {
         return SpaceRoute
+    })
+
+    router.addRoute('/messages', () => {
+        return MessageRoute
     })
 
     return router
