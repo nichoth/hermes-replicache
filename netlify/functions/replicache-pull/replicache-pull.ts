@@ -85,16 +85,16 @@ export const handler:Handler = async function handler (ev:HandlerEvent) {
                 }
             }
 
-            const body: PullResponse = {
+            const body:PullResponse = {
                 lastMutationIDChanges: lastMutationIDChanges ?? {},
                 cookie: currentVersion,
                 patch,
             }
 
             res = { statusCode: 200, headers, body: JSON.stringify(body) }
-        }).then(() => {
-            return res
         })
+
+        return res!
     } catch (err) {
         console.error(err)
         return { statusCode: 500, headers, body: err.toString() }
