@@ -8,6 +8,8 @@ import { initSpace } from './space.js'
 import { Message, MessageWithID } from './types.js'
 
 const debug = Debug('state')
+
+// this is the demo backend that works with a limited counter app
 const SERVER_URL = 'https://replicache-counter-pr-6.onrender.com'
 
 /**
