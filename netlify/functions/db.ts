@@ -5,6 +5,11 @@ const { isolationLevel } = pgp.txMode
 
 export const serverID = 1
 
+/**
+ * Global Version strategy
+ * https://doc.replicache.dev/byob/remote-schema#define-the-schema
+ */
+
 async function initDB () {
     console.log('initializing database...')
 
