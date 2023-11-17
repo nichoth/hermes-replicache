@@ -2,7 +2,7 @@ import { Handler, HandlerEvent, HandlerResponse } from '@netlify/functions'
 import { headers } from '../util.js'
 import { serverID, tx } from '../db.js'
 import { ITask } from 'pg-promise'
-import { PullResponse } from 'replicache'
+import { ReadonlyJSONValue, PullResponse } from 'replicache'
 
 export const handler:Handler = async function handler (ev:HandlerEvent) {
     if (ev.httpMethod === 'OPTIONS') {
@@ -61,7 +61,12 @@ export const handler:Handler = async function handler (ev:HandlerEvent) {
             )
 
             // Build and return response.
-            const patch = []
+            // const patch:{ op:string, key:string, value? }[] = []
+            const patch:{
+                op: 'put'|'del';
+                key: string;
+                value?: ReadonlyJSONValue;
+            }[] = []
 
             for (const row of changed) {
                 const { id, sender, content, ord, version: rowVersion, deleted } = row
