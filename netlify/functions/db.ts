@@ -1,36 +1,55 @@
-// import { newDb } from 'pg-mem'
 import Debug from '@nichoth/debug'
-import pgp, { IDatabase, ITask, txMode } from 'pg-promise'
+import pgInit, { IDatabase, ITask } from 'pg-promise'
+import { getConnectionString } from './supabase.js'
 
 const debug = Debug()
-
+const pgp = pgInit()
 export type Executor = ITask<unknown>
+const { isolationLevel, TransactionMode } = pgp.txMode
+
+const dbp = (async () => {
+    const db = await pgp(getConnectionString())
+    await tx(createDatabase, db)
+    return db
+})()
+
+// Helper to make sure we always access database at serializable level.
+export async function tx<R> (
+    f: (executor: Executor) => R,
+    db?: IDatabase<unknown> | undefined
+) {
+    if (!db) {
+        db = await dbp
+    }
+    return await db.tx(
+        { mode: new TransactionMode({ tiLevel: isolationLevel.serializable }) },
+        f
+    )
+}
 
 export async function createDatabase (t: Executor) {
-    if (await schemaExists(t)) {
-        return
-    }
+    if (await schemaExists(t)) return
     debug('creating database')
     await createSchemaVersion1(t)
 }
 
 export async function createSchemaVersion1 (t: Executor) {
     await t.none(`create table replicache_space (
-      id text primary key not null,
-      version integer not null)`)
+        id text primary key not null,
+        version integer not null)`)
     await t.none(
         'insert into replicache_space (id, version) values (\'global\', 0)'
     )
 
     await t.none(`create table replicache_client_group (
-      id text primary key not null,
-      user_id text not null)`)
+        id text primary key not null,
+        user_id text not null)`)
 
     await t.none(`create table replicache_client (
-      id text primary key not null,
-      client_group_id text not null references replicache_client_group(id),
-      last_mutation_id integer not null,
-      last_modified_version integer not null)`)
+        id text primary key not null,
+        client_group_id text not null references replicache_client_group(id),
+        last_mutation_id integer not null,
+        last_modified_version integer not null)`)
     await t.none(
         'create index on replicache_client (client_group_id, last_modified_version)'
     )
@@ -71,74 +90,3 @@ async function schemaExists (t: Executor): Promise<number> {
         and tablename = 'replicache_space')`)
     return spaceExists.exists
 }
-
-// const { isolationLevel } = pgp.txMode
-
-// export const serverID = 1
-
-// // /**
-// //  * Global Version strategy
-// //  * https://doc.replicache.dev/byob/remote-schema#define-the-schema
-// //  */
-
-// // async function initDB () {
-// //     console.log('initializing database...')
-
-// //     const db = newDb().adapters.createPgPromise()
-
-// //     await tx(async t => {
-// //         // A single global version number for the entire database.
-// //         await t.none(
-// //             'create table replicache_server (id integer primary key not null, version integer)',
-// //         )
-// //         await t.none(
-// //             'insert into replicache_server (id, version) values ($1, 1)',
-// //             serverID,
-// //         )
-
-// //         // Stores chat messages.
-// //         await t.none(`create table message (
-// //         id text primary key not null,
-// //         sender varchar(255) not null,
-// //         content text not null,
-// //         ord integer not null,
-// //         deleted boolean not null,
-// //         version integer not null)`)
-
-// //         // Stores last mutationID processed for each Replicache client.
-// //         await t.none(`create table replicache_client (
-// //         id varchar(36) primary key not null,
-// //         client_group_id varchar(36) not null,
-// //         last_mutation_id integer not null,
-// //         version integer not null)`)
-
-// //         // TODO: indexes
-// //     }, db)
-
-// //     return db
-// // }
-
-// // function getDB () {
-// //     // Cache the database in the Node global so that it survives HMR.
-// //     if (!global.__db) {
-// //         global.__db = initDB()
-// //     }
-// //     return global.__db as IDatabase<{}>
-// // }
-
-// // // Helper to make sure we always access database at serializable level.
-// // export async function tx<R> (
-// //     f: (t: ITask<{}> & {}) => Promise<R>,
-// //     dbp = getDB(),
-// // ) {
-// //     const db = await dbp
-
-// //     return await db.tx(
-// //         {
-// //             mode: new txMode.TransactionMode({
-// //                 tiLevel: isolationLevel.serializable,
-// //             }),
-// //         },
-// //         f,
-// //     )
-// // }
