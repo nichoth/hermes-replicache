@@ -2,12 +2,30 @@
 
 Trying replicache.
 
+This is using [netlify](https://www.netlify.com/) as host, and [supabase](https://supabase.com/) as a DB.
+
 [See this demo live](https://hermes-replicache.netlify.app/)
 
 ## develop
 ```sh
 npm start
 ```
+
+## configure
+Create a `.env` file with these variables:
+
+```sh
+VITE_DEBUG="state,view"
+SUPABASE_ANON_KEY="eyJhbG..."
+SUPABASE_DATABASE_PASSWORD="my password here"
+SUPABASE_URL="https://my-url.supabase.co"
+PUSHER_APP_ID="1234567"
+PUSHER_KEY="123abc"
+PUSHER_SECRET="123abc"
+PUSHER_CLUSTER="us3"
+```
+
+You will need to create a [supabase](https://supabase.com/).
 
 ## frontend architecture
 
