@@ -11,7 +11,7 @@ npm start
 
 ## frontend architecture
 
-Create application state & a replicache instance in the file [./src/state.ts](./src/state.ts). This is where we create methods for the view to call, and subscribe to replicache.
+Create application state & a replicache instance in the file [./src/state.ts](./src/state.ts). This is where we subscribe to replicache, and create methods that are called by the view.
 
 The view is made with [preact](https://preactjs.com/).
 
