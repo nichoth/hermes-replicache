@@ -35,3 +35,6 @@ Summing up, I think you probably don't want to use pg-mem if you're using netlif
 ## poke
 
 [See docs](https://doc.replicache.dev/byob/poke)
+
+## in progress
+[serverside pull function](https://doc.replicache.dev/byob/dynamic-pull#implement-pull)

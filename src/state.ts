@@ -1,13 +1,16 @@
 import { Signal, signal } from '@preact/signals'
 import Route from 'route-event'
-import { Replicache, WriteTransaction } from 'replicache'
+import { Replicache } from 'replicache'
 import Debug from '@nichoth/debug'
 import { nanoid } from 'nanoid'
 import { LICENSE_KEY } from './license.js'
 import { initSpace } from './space.js'
-import { Message, MessageWithID } from './types.js'
+import { Message } from './types.js'
+import { mutators } from './mutators.js'
 
 const debug = Debug('state')
+
+// this is the demo backend that works with a limited counter app
 const SERVER_URL = 'https://replicache-counter-pr-6.onrender.com'
 
 /**
@@ -31,35 +34,9 @@ export async function State ():Promise<{
         licenseKey: LICENSE_KEY,
         // pushURL: `${SERVER_URL}/api/replicache/push?spaceID=${spaceID}`,
         // pullURL: `${SERVER_URL}/api/replicache/pull?spaceID=${spaceID}`,
-        pushURL: '/api/replicache-push',  // <- for localhost server
+        pushURL: '/api/replicache-push',  // <- for netlify server
         pullURL: '/api/replicache-pull',
-        mutators: {
-            increment: async (tx, delta) => {
-                const prev = (await tx.get('count')) ?? 0
-                const next = prev + delta
-                await tx.put('count', next)
-                return next
-            },
-
-            decrement: async (tx, delta) => {
-                const prev = (await tx.get('count')) ?? 0
-                const next = prev - delta
-                await tx.put('count', next)
-                tx.put('count', prev - delta)
-                return next
-            },
-
-            createMessage: async function (
-                tx:WriteTransaction,
-                { id, from, content, order }:MessageWithID
-            ) {
-                await tx.put(`message/${id}`, {
-                    from,
-                    content,
-                    order,
-                })
-            },
-        }
+        mutators
     })
 
     const eventUrl = SERVER_URL + '/api/replicache/poke?spaceID=' + spaceID

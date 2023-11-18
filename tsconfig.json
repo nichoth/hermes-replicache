@@ -1,10 +1,10 @@
 {
   "compilerOptions": {
     "listFiles": true,
-    "module": "NodeNext",
+    "module": "ESNext",
     "target": "ES2022",
     "types": ["node", "vite/client"],
-    "moduleResolution": "nodenext",
+    "moduleResolution": "Bundler",
     "esModuleInterop": false,
     "lib": ["ES2022", "DOM", "WebWorker"],
     "allowJs": false,
@@ -26,6 +26,7 @@
     "declarationMap": true
   },
   "include": [
+    "netlify/**/*.ts",
     "global.d.ts",
     "example",
     "src/**/*",
