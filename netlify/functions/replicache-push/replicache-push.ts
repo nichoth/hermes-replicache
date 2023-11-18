@@ -20,10 +20,6 @@ import { mutators } from '../../../src/mutators.js'
 const authError = {}
 const clientStateNotFoundError = {}
 
-/**
- * ...Refactoring to use supabase...
- */
-
 const mutationSchema = z.object({
     id: z.number(),
     clientID: z.string(),
