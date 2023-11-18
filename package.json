@@ -27,7 +27,9 @@
     "pusher": "^5.1.3",
     "pusher-js": "^8.3.0",
     "replicache": "^13.0.1",
-    "route-event": "^4.1.10"
+    "replicache-transaction": "^0.3.1",
+    "route-event": "^4.1.10",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@nichoth/debug": "^0.2.6",
