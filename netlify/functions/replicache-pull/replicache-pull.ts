@@ -35,7 +35,7 @@ export const handler:Handler = async function handler (ev:HandlerEvent) {
     const body = JSON.parse(ev.body)
     const pullRequest = pullRequestSchema.parse(body)
 
-    console.log('Processing pull', ev.body)
+    console.log('**Processing pull**', ev.body)
 
     try {
         const pullResponse = await processPull(pullRequest, userID)
@@ -53,8 +53,6 @@ export const handler:Handler = async function handler (ev:HandlerEvent) {
 async function processPull (req:PullRequest, userID:string) {
     const { clientGroupID, cookie: requestCookie } = req
 
-    const t0 = Date.now()
-
     const [entries, lastMutationIDChanges, responseCookie] = await tx(
         async (executor) => {
             const clientGroup = await getClientGroup(executor, req.clientGroupID)
@@ -69,13 +67,6 @@ async function processPull (req:PullRequest, userID:string) {
             ])
         }
     )
-
-    console.log('lastMutationIDChanges: ', lastMutationIDChanges)
-    console.log('responseCookie: ', responseCookie)
-    console.log('Read all objects in', Date.now() - t0)
-
-    // TODO: Return ClientStateNotFound for Replicache 13 to handle case where
-    // server state deleted.
 
     const res:PullResponse = {
         lastMutationIDChanges,
@@ -98,6 +89,5 @@ async function processPull (req:PullRequest, userID:string) {
         }
     }
 
-    console.log('Returning', JSON.stringify(res, null, ''))
     return res
 }

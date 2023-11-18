@@ -183,10 +183,11 @@ export async function getChangedLastMutationIDs (
     sinceVersion: number
 ): Promise<Record<string, number>> {
     console.log('getting changed lmids', [clientGroupID, sinceVersion])
+
     const rows = await executor.manyOrNone(
-    `select id, last_mutation_id from replicache_client
-      where client_group_id = $1 and last_modified_version > $2`,
-    [clientGroupID, sinceVersion]
+        `select id, last_mutation_id from replicache_client
+        where client_group_id = $1 and last_modified_version > $2`,
+        [clientGroupID, sinceVersion]
     )
     const result: Record<string, number> = {}
     for (const r of rows) {
@@ -202,12 +203,12 @@ export async function setLastMutationID (
     lastModifiedVersion: number
 ): Promise<void> {
     await executor.none(
-    `
-    insert into replicache_client (id, last_mutation_id, last_modified_version)
-    values ($1, $2, $3)
-      on conflict (id) do update set
-        lastmutationid = $2, last_modified_version = $3
-    `,
-    [clientID, lastMutationID, lastModifiedVersion]
+        `
+        insert into replicache_client (id, last_mutation_id, last_modified_version)
+        values ($1, $2, $3)
+        on conflict (id) do update set
+            lastmutationid = $2, last_modified_version = $3
+        `,
+        [clientID, lastMutationID, lastModifiedVersion]
     )
 }

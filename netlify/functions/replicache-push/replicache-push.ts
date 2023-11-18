@@ -1,188 +1,186 @@
 import { Handler, HandlerEvent } from '@netlify/functions'
 import { ReplicacheTransaction } from 'replicache-transaction'
-import { Executor, tx, getGlobalVersion, PostgresStorage } from '../db.js'
-import { getClientGroup, headers } from '../util.js'
-import { getClient, createClient, updateClient, setGlobalVersion } from '../data.js'
 import { z } from 'zod'
-import Debug from '@nichoth/debug'
+// import Debug from '@nichoth/debug'
+import { Executor, tx, getGlobalVersion, PostgresStorage } from '../db.js'
+import {
+    Client,
+    getClient,
+    createClient,
+    createClientGroup,
+    updateClient,
+    setGlobalVersion
+} from '../data.js'
+import { getClientGroup, headers } from '../util.js'
+import { mutators } from '../../../src/mutators.js'
 
 // const debug = Debug()
-// const authError = {}
-// const clientStateNotFoundError = {}
+const authError = {}
+const clientStateNotFoundError = {}
 
-// /**
-//  * ...Refactoring to use supabase...
-//  */
+/**
+ * ...Refactoring to use supabase...
+ */
 
-// type Message = {
-//     from: string;
-//     content: string;
-//     order: number;
-// };
+const mutationSchema = z.object({
+    id: z.number(),
+    clientID: z.string(),
+    name: z.string(),
+    args: z.any(),
+})
 
-// type MessageWithID = Message & { id: string };
+const pushRequestSchema = z.object({
+    clientGroupID: z.string(),
+    mutations: z.array(mutationSchema),
+})
 
-// const mutationSchema = z.object({
-//     id: z.number(),
-//     clientID: z.string(),
-//     name: z.string(),
-//     args: z.any(),
-// })
+type PushRequest = z.infer<typeof pushRequestSchema>;
 
-// const pushRequestSchema = z.object({
-//     clientGroupID: z.string(),
-//     mutations: z.array(mutationSchema),
-// })
+export const handler:Handler = async function (ev:HandlerEvent) {
+    if (!ev.body) return { statusCode: 400, headers }
+    const userID = (ev.headers.cookie && ev.headers.cookie['userID']) || 'anon'
+    const body = JSON.parse(ev.body)
 
-// type PushRequest = z.infer<typeof pushRequestSchema>;
+    // debug('Processing push ' + JSON.stringify(body, null, 2))
 
-// export const handler:Handler = async function (ev:HandlerEvent) {
-//     if (!ev.body) return { statusCode: 400, headers }
-//     const userID = (ev.headers.cookie && ev.headers.cookie['userID']) || 'anon'
-//     const body = JSON.parse(ev.body)
+    const push = pushRequestSchema.parse(body)
 
-//     debug('Processing push ' + JSON.stringify(body, null, 2))
+    try {
+        await processPush(push, userID)
+    } catch (err) {
+        if (!(err instanceof Error)) return { statusCode: 500, headers }
+        /**
+         * @TODO handle errors
+         * see example https://github.com/rocicorp/todo-nextjs/blob/main/pages/api/replicache/push.ts#L45
+         */
+        return { statusCode: 500, headers, body: err.toString() }
+    }
 
-//     const push = pushRequestSchema.parse(body)
+    return { statusCode: 200, body: 'OK' }
+}
 
-//     try {
-//         await processPush(push, userID)
-//     } catch (err) {
-//         if (!(err instanceof Error)) return { statusCode: 500, headers }
-//         /**
-//          * @TODO handle errors
-//          * see example https://github.com/rocicorp/todo-nextjs/blob/main/pages/api/replicache/push.ts#L45
-//          */
-//         return { statusCode: 500, headers, body: err.toString() }
-//     }
+async function processPush (push: PushRequest, userID: string) {
+    const t0 = Date.now()
+    // Batch all mutations into one transaction. ReplicacheTransaction caches
+    // reads and changes in memory, we will flush them all together at end of tx.
+    await tx(async (executor) => {
+        const clientGroup = await ensureClientGroup(
+            executor,
+            push.clientGroupID,
+            userID
+        )
 
-//     return { statusCode: 200, body: 'OK' }
-// }
+        // Since all mutations within one transaction, we can just increment the
+        // global version once.
+        const prevVersion = await getGlobalVersion(executor)
+        const nextVersion = prevVersion + 1
 
-// async function processPush (push: PushRequest, userID: string) {
-//     const t0 = Date.now()
-//     // Batch all mutations into one transaction. ReplicacheTransaction caches
-//     // reads and changes in memory, we will flush them all together at end of tx.
-//     await tx(async (executor) => {
-//         const clientGroup = await ensureClientGroup(
-//             executor,
-//             push.clientGroupID,
-//             userID
-//         )
+        const storage = new PostgresStorage(nextVersion, executor)
+        const tx = new ReplicacheTransaction(storage)
+        const clients = new Map<string, Client>()
 
-//         // Since all mutations within one transaction, we can just increment the
-//         // global version once.
-//         const prevVersion = await getGlobalVersion(executor)
-//         const nextVersion = prevVersion + 1
-//         console.log('nextVersion: ', nextVersion)
+        for (let i = 0; i < push.mutations.length; i++) {
+            const mutation = push.mutations[i]
+            const { id, clientID } = mutation
 
-//         const storage = new PostgresStorage(nextVersion, executor)
-//         const tx = new ReplicacheTransaction(storage)
-//         const clients = new Map<string, Client>()
+            let client = clients.get(clientID)
+            if (client === undefined) {
+                client = await ensureClient(
+                    executor,
+                    clientID,
+                    clientGroup.id,
+                    nextVersion,
+                    id
+                )
 
-//         for (let i = 0; i < push.mutations.length; i++) {
-//             const mutation = push.mutations[i]
-//             const { id, clientID } = mutation
+                clients.set(clientID, client)
+            }
 
-//             let client = clients.get(clientID)
-//             if (client === undefined) {
-//                 client = await ensureClient(
-//                     executor,
-//                     clientID,
-//                     clientGroup.id,
-//                     nextVersion,
-//                     id
-//                 )
-//                 clients.set(clientID, client)
-//             }
+            const expectedMutationID = client.lastMutationID + 1
 
-//             const expectedMutationID = client.lastMutationID + 1
+            if (id < expectedMutationID) {
+                console.log(`Mutation ${id} has already been processed - skipping`)
+                continue
+            }
 
-//             if (id < expectedMutationID) {
-//                 console.log(`Mutation ${id} has already been processed - skipping`)
-//                 continue
-//             }
+            if (id > expectedMutationID) {
+                throw new Error(
+            `Mutation ${id} is from the future. Perhaps the server state was deleted? ` +
+              'If so, clear application storage in browser and refresh.'
+                )
+            }
 
-//             if (id > expectedMutationID) {
-//                 throw new Error(
-//             `Mutation ${id} is from the future. Perhaps the server state was deleted? ` +
-//               'If so, clear application storage in browser and refresh.'
-//                 )
-//             }
+            const t1 = Date.now()
+            const mutator = mutators[mutation.name]
+            if (!mutator) {
+                console.error(`Unknown mutator: ${mutation.name} - skipping`)
+            }
 
-//             console.log('Processing mutation:', JSON.stringify(mutation, null, ''))
+            try {
+                await mutator(tx, mutation.args)
+            } catch (e) {
+                console.error(
+            `Error executing mutator: __${JSON.stringify(mutator) || mutator.name}__: ${e}`
+                )
+            }
 
-//             const t1 = Date.now()
-//             const mutator = (mutators as any)[mutation.name]
-//             if (!mutator) {
-//                 console.error(`Unknown mutator: ${mutation.name} - skipping`)
-//             }
+            client.lastMutationID = expectedMutationID
+            client.lastModifiedVersion = nextVersion
+            console.log('Processed mutation in', Date.now() - t1)
+        }
 
-//             try {
-//                 await mutator(tx, mutation.args)
-//             } catch (e) {
-//                 console.error(
-//             `Error executing mutator: ${JSON.stringify(mutator)}: ${e}`
-//                 )
-//             }
+        await Promise.all([
+            ...[...clients.values()].map((c) => updateClient(executor, c)),
+            setGlobalVersion(executor, nextVersion),
+            tx.flush(),
+        ])
 
-//             client.lastMutationID = expectedMutationID
-//             client.lastModifiedVersion = nextVersion
-//             console.log('Processed mutation in', Date.now() - t1)
-//         }
+        // No need to explicitly poke, Supabase realtime stuff will fire a change
+        // because the space table changed.
+    })
 
-//         await Promise.all([
-//             ...[...clients.values()].map((c) => updateClient(executor, c)),
-//             setGlobalVersion(executor, nextVersion),
-//             tx.flush(),
-//         ])
+    console.log('Processed all mutations in', Date.now() - t0)
+}
 
-//         // No need to explicitly poke, Supabase realtime stuff will fire a change
-//         // because the space table changed.
-//     })
+async function ensureClientGroup (
+    executor: Executor,
+    id: string,
+    userID: string
+) {
+    const clientGroup = await getClientGroup(executor, id)
+    if (clientGroup) {
+        // Users can only access their own groups.
+        if (clientGroup.userID !== userID) {
+            throw authError
+        }
+        return clientGroup
+    }
 
-//     console.log('Processed all mutations in', Date.now() - t0)
-// }
+    return await createClientGroup(executor, id, userID)
+}
 
-// async function ensureClientGroup (
-//     executor: Executor,
-//     id: string,
-//     userID: string
-// ) {
-//     const clientGroup = await getClientGroup(executor, id)
-//     if (clientGroup) {
-//         // Users can only access their own groups.
-//         if (clientGroup.userID !== userID) {
-//             throw authError
-//         }
-//         return clientGroup
-//     }
+async function ensureClient (
+    executor: Executor,
+    id: string,
+    clientGroupID: string,
+    lastModifiedVersion: number,
+    mutationID: number
+): Promise<Client> {
+    const c = await getClient(executor, id)
+    if (c) {
+        // If this client isn't from clientGroup we've auth'd, then user cannot
+        // access it.
+        if (c.clientGroupID !== clientGroupID) {
+            throw authError
+        }
+        return c
+    }
 
-//     return await createClientGroup(executor, id, userID)
-// }
+    // If mutationID isn't 1, then this isn't a new client. We should have found
+    // the client record.
+    if (mutationID !== 1) {
+        throw clientStateNotFoundError
+    }
 
-// async function ensureClient (
-//     executor: Executor,
-//     id: string,
-//     clientGroupID: string,
-//     lastModifiedVersion: number,
-//     mutationID: number
-// ): Promise<Client> {
-//     const c = await getClient(executor, id)
-//     if (c) {
-//         // If this client isn't from clientGroup we've auth'd, then user cannot
-//         // access it.
-//         if (c.clientGroupID !== clientGroupID) {
-//             throw authError
-//         }
-//         return c
-//     }
-
-//     // If mutationID isn't 1, then this isn't a new client. We should have found
-//     // the client record.
-//     if (mutationID !== 1) {
-//         throw clientStateNotFoundError
-//     }
-
-//     return (await createClient(executor, id, clientGroupID, lastModifiedVersion))
-// }
+    return (await createClient(executor, id, clientGroupID, lastModifiedVersion))
+}

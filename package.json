@@ -9,7 +9,7 @@
     "test": "npm run lint && npm run build && npm run build-tests && npm run test-tape-run",
     "test-tape-run": "cat test/index.html | tape-run --input=html --static=test | tap-arc",
     "build": "mkdir -p ./public && rm -rf ./public/* && vite build",
-    "start": "concurrently --kill-others \"NODE_ENV=DEV npx ntl functions:serve --port=9999 --debug\" \"npx vite\"",
+    "start": "NODE_ENV=DEV concurrently --kill-others \"NODE_ENV=DEV npx ntl functions:serve --port=9999 --debug\" \"npx vite\"",
     "preversion": "npm run lint",
     "postversion": "git push && git push --tags",
     "prepublishOnly": "npm run build"

@@ -34,7 +34,7 @@ export async function State ():Promise<{
         licenseKey: LICENSE_KEY,
         // pushURL: `${SERVER_URL}/api/replicache/push?spaceID=${spaceID}`,
         // pullURL: `${SERVER_URL}/api/replicache/pull?spaceID=${spaceID}`,
-        pushURL: '/api/replicache-push',  // <- for localhost server
+        pushURL: '/api/replicache-push',  // <- for netlify server
         pullURL: '/api/replicache-pull',
         mutators
     })
