@@ -32,7 +32,7 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@nichoth/debug": "^0.2.6",
+    "@nichoth/debug": "^0.2.8",
     "@nichoth/tapzero": "^0.8.4",
     "@preact/preset-vite": "^2.7.0",
     "@types/node": "^20.9.0",

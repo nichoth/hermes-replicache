@@ -1,8 +1,22 @@
-import { Handler, HandlerEvent, HandlerResponse } from '@netlify/functions'
+import { Handler, HandlerEvent } from '@netlify/functions'
+import { PullResponse } from 'replicache'
+import { z } from 'zod'
+import {
+    getChangedEntries,
+    getChangedLastMutationIDs,
+    getClientGroup,
+    getGlobalVersion,
+} from '../data.js'
 import { headers } from '../util.js'
-import { serverID, tx } from '../db.js'
-import { ITask } from 'pg-promise'
-import { ReadonlyJSONValue, PullResponse } from 'replicache'
+import { tx } from '../db.js'
+
+const pullRequestSchema = z.object({
+    clientGroupID: z.string(),
+    cookie: z.union([z.number(), z.null()]),
+})
+
+type PullRequest = z.infer<typeof pullRequestSchema>;
+const authError = {}
 
 export const handler:Handler = async function handler (ev:HandlerEvent) {
     if (ev.httpMethod === 'OPTIONS') {
@@ -17,109 +31,73 @@ export const handler:Handler = async function handler (ev:HandlerEvent) {
         }
     }
 
-    const pull = JSON.parse(ev.body)
-    console.log('Processing pull', JSON.stringify(pull))
-    const { clientGroupID } = pull
-    const fromVersion = parseInt(pull.cookie) ?? 0
-    const t0 = Date.now()
+    const userID = ((ev.headers.cookies && ev.headers.cookies['userID']) || 'anon')
+    const body = JSON.parse(ev.body)
+    const pullRequest = pullRequestSchema.parse(body)
 
-    let res:HandlerResponse
+    console.log('Processing pull', ev.body)
 
     try {
-        // Read all data in a single transaction so it's consistent.
-        await tx(async t => {
-            // Get current version.
-            const { version: currentVersion } = await t.one<{version: number}>(
-                'select version from replicache_server where id = $1',
-                serverID,
-            )
-
-            if (fromVersion > currentVersion) {
-                throw new Error(
-                    `fromVersion ${fromVersion} is from the future - aborting. This can happen in development if the server restarts. In that case, clear appliation data in browser and refresh.`,
-                )
-            }
-
-            // Get lmids for requesting client groups.
-            const lastMutationIDChanges = await getLastMutationIDChanges(
-                t,
-                clientGroupID,
-                fromVersion,
-            )
-
-            // Get changed domain objects since requested version.
-            const changed = await t.manyOrNone<{
-                id: string;
-                sender: string;
-                content: string;
-                ord: number;
-                version: number;
-                deleted: boolean;
-            }>(
-                'select id, sender, content, ord, version, deleted from message where version > $1',
-                fromVersion,
-            )
-
-            // Build and return response.
-            // const patch:{ op:string, key:string, value? }[] = []
-            const patch:{
-                op: 'put'|'del';
-                key: string;
-                value?: ReadonlyJSONValue;
-            }[] = []
-
-            for (const row of changed) {
-                const { id, sender, content, ord, version: rowVersion, deleted } = row
-                if (deleted) {
-                    if (rowVersion > fromVersion) {
-                        patch.push({
-                            op: 'del',
-                            key: `message/${id}`,
-                        })
-                    }
-                } else {
-                    patch.push({
-                        op: 'put',
-                        key: `message/${id}`,
-                        value: {
-                            from: sender,
-                            content: content,
-                            order: ord,
-                        },
-                    })
-                }
-            }
-
-            const body:PullResponse = {
-                lastMutationIDChanges: lastMutationIDChanges ?? {},
-                cookie: currentVersion,
-                patch,
-            }
-
-            res = { statusCode: 200, headers, body: JSON.stringify(body) }
-        })
-
-        return res!
+        const pullResponse = await processPull(pullRequest, userID)
+        return { statusCode: 200, headers, body: JSON.stringify(pullResponse) }
     } catch (err) {
-        console.error(err)
-        return { statusCode: 500, headers, body: err.toString() }
-    } finally {
-        console.log('Processed pull in', Date.now() - t0)
+        if (err === authError) {
+            return { statusCode: 401, headers, body: 'Unauthorized' }
+        } else {
+            console.error('pull', err)
+            return { statusCode: 500, headers, body: 'Error processing pull:' }
+        }
     }
 }
 
-async function getLastMutationIDChanges (
-    t: ITask<{}>,
-    clientGroupID: string,
-    fromVersion: number,
-) {
-    /* eslint-disable camelcase */
-    const rows = await t.manyOrNone<{id: string; last_mutation_id: number}>(
-        `select id, last_mutation_id
-        from replicache_client
-        where client_group_id = $1 and version > $2`,
-        [clientGroupID, fromVersion],
+async function processPull (req:PullRequest, userID:string) {
+    const { clientGroupID, cookie: requestCookie } = req
+
+    const t0 = Date.now()
+
+    const [entries, lastMutationIDChanges, responseCookie] = await tx(
+        async (executor) => {
+            const clientGroup = await getClientGroup(executor, req.clientGroupID)
+            if (clientGroup && clientGroup.userID !== userID) {
+                throw authError
+            }
+
+            return Promise.all([
+                getChangedEntries(executor, requestCookie ?? 0),
+                getChangedLastMutationIDs(executor, clientGroupID, requestCookie ?? 0),
+                getGlobalVersion(executor),
+            ])
+        }
     )
 
-    return Object.fromEntries(rows.map(r => [r.id, r.last_mutation_id]))
+    console.log('lastMutationIDChanges: ', lastMutationIDChanges)
+    console.log('responseCookie: ', responseCookie)
+    console.log('Read all objects in', Date.now() - t0)
+
+    // TODO: Return ClientStateNotFound for Replicache 13 to handle case where
+    // server state deleted.
+
+    const res:PullResponse = {
+        lastMutationIDChanges,
+        cookie: responseCookie,
+        patch: [],
+    }
+
+    for (const [key, value, deleted] of entries) {
+        if (deleted) {
+            res.patch.push({
+                op: 'del',
+                key,
+            })
+        } else {
+            res.patch.push({
+                op: 'put',
+                key,
+                value,
+            })
+        }
+    }
+
+    console.log('Returning', JSON.stringify(res, null, ''))
+    return res
 }

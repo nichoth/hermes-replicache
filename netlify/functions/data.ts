@@ -2,15 +2,15 @@ import type { JSONValue } from 'replicache'
 import type { Executor } from './db.js'
 
 export type ClientGroup = {
-  id: string;
-  userID: string;
+    id: string;
+    userID: string;
 };
 
 export type Client = {
-  id: string;
-  clientGroupID: string;
-  lastMutationID: number;
-  lastModifiedVersion: number;
+    id: string;
+    clientGroupID: string;
+    lastMutationID: number;
+    lastModifiedVersion: number;
 };
 
 export async function getClientGroup (executor: Executor, id: string) {
