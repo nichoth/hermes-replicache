@@ -15,8 +15,8 @@ export async function initSpace (serverURL, setRoute) {
 }
 
 async function spaceExists (serverURL, spaceID) {
-    const spaceExistRes = await fetchJSON(serverURL, 'spaceExists', spaceID)
-    return spaceExistRes.spaceExists
+    const res = await fetchJSON(serverURL, 'spaceExists', spaceID)
+    return res.spaceExists
 }
 
 async function createSpace (serverURL) {
@@ -25,6 +25,9 @@ async function createSpace (serverURL) {
 }
 
 async function fetchJSON (serverURL, apiName, spaceID?) {
+    /**
+     * @TODO -- change URL and implement this
+     */
     const res = await fetch(`${serverURL}/api/replicache/${apiName}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

@@ -1,9 +1,9 @@
 import Debug from '@nichoth/debug'
 import pgInit, { IDatabase, ITask } from 'pg-promise'
-import { getConnectionString } from './supabase.js'
 import type { JSONValue } from 'replicache'
 import type { Storage } from 'replicache-transaction'
 import { putEntry, getEntry, getEntries, delEntry } from './data.js'
+import { getConnectionString } from './supabase.js'
 
 const debug = Debug()
 const pgp = pgInit()
@@ -18,8 +18,8 @@ const dbp = (async () => {
 
 // Helper to make sure we always access database at serializable level.
 export async function tx<R> (
-    fn: (executor: Executor) => R,
-    db?: IDatabase<unknown> | undefined
+    fn:(executor:Executor) => R,
+    db?:IDatabase<unknown> | undefined
 ) {
     if (!db) {
         db = await dbp
@@ -30,13 +30,13 @@ export async function tx<R> (
     )
 }
 
-export async function createDatabase (t: Executor) {
-    if (await schemaExists(t)) return
+export async function createDatabase (tx:Executor) {
+    if (await schemaExists(tx)) return
     debug('creating database')
-    await createSchemaVersion1(t)
+    await createSchemaVersion1(tx)
 }
 
-export async function createSchemaVersion1 (t: Executor) {
+export async function createSchemaVersion1 (t:Executor) {
     await t.none(`create table replicache_space (
         id text primary key not null,
         version integer not null)`)

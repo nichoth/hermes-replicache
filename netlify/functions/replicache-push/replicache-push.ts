@@ -57,7 +57,7 @@ export const handler:Handler = async function (ev:HandlerEvent) {
     return { statusCode: 200, body: 'OK' }
 }
 
-async function processPush (push: PushRequest, userID: string) {
+async function processPush (push:PushRequest, userID:string) {
     const t0 = Date.now()
     // Batch all mutations into one transaction. ReplicacheTransaction caches
     // reads and changes in memory, we will flush them all together at end of tx.
@@ -133,8 +133,7 @@ async function processPush (push: PushRequest, userID: string) {
             tx.flush(),
         ])
 
-        // No need to explicitly poke, Supabase realtime stuff will fire a
-        // change because the space table changed.
+        await sendPoke()
     })
 
     console.log('Processed all mutations in', Date.now() - t0)
@@ -164,14 +163,14 @@ async function ensureClient (
     lastModifiedVersion: number,
     mutationID: number
 ): Promise<Client> {
-    const c = await getClient(executor, id)
-    if (c) {
+    const client = await getClient(executor, id)
+    if (client) {
         // If this client isn't from clientGroup we've auth'd, then user cannot
         // access it.
-        if (c.clientGroupID !== clientGroupID) {
+        if (client.clientGroupID !== clientGroupID) {
             throw authError
         }
-        return c
+        return client
     }
 
     // If mutationID isn't 1, then this isn't a new client. We should have found
@@ -183,6 +182,9 @@ async function ensureClient (
     return (await createClient(executor, id, clientGroupID, lastModifiedVersion))
 }
 
+/**
+ * @TODO
+ */
 async function sendPoke () {
     const pusher = new Pusher({
         appId: process.env.PUSHER_APP_ID!,
