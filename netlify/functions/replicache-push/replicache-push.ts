@@ -1,6 +1,8 @@
+import 'dotenv/config'
 import { Handler, HandlerEvent } from '@netlify/functions'
 import { ReplicacheTransaction } from 'replicache-transaction'
 import { z } from 'zod'
+import Pusher from 'pusher'
 // import Debug from '@nichoth/debug'
 import { Executor, tx, getGlobalVersion, PostgresStorage } from '../db.js'
 import {
@@ -135,8 +137,8 @@ async function processPush (push: PushRequest, userID: string) {
             tx.flush(),
         ])
 
-        // No need to explicitly poke, Supabase realtime stuff will fire a change
-        // because the space table changed.
+        // No need to explicitly poke, Supabase realtime stuff will fire a
+        // change because the space table changed.
     })
 
     console.log('Processed all mutations in', Date.now() - t0)
@@ -183,4 +185,17 @@ async function ensureClient (
     }
 
     return (await createClient(executor, id, clientGroupID, lastModifiedVersion))
+}
+
+async function sendPoke () {
+    const pusher = new Pusher({
+        appId: process.env.PUSHER_APP_ID!,
+        key: process.env.PUSHER_KEY!,
+        secret: process.env.PUSHER_SECRET!,
+        cluster: process.env.PUSHER_CLUSTER!,
+        useTLS: true,
+    })
+    const t0 = Date.now()
+    await pusher.trigger('default', 'poke', {})
+    console.log('Sent poke in', Date.now() - t0)
 }

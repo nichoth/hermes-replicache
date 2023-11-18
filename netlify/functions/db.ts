@@ -18,7 +18,7 @@ const dbp = (async () => {
 
 // Helper to make sure we always access database at serializable level.
 export async function tx<R> (
-    f: (executor: Executor) => R,
+    fn: (executor: Executor) => R,
     db?: IDatabase<unknown> | undefined
 ) {
     if (!db) {
@@ -26,7 +26,7 @@ export async function tx<R> (
     }
     return await db.tx(
         { mode: new TransactionMode({ tiLevel: isolationLevel.serializable }) },
-        f
+        fn
     )
 }
 
@@ -53,6 +53,7 @@ export async function createSchemaVersion1 (t: Executor) {
         client_group_id text not null references replicache_client_group(id),
         last_mutation_id integer not null,
         last_modified_version integer not null)`)
+
     await t.none(
         'create index on replicache_client (client_group_id, last_modified_version)'
     )
