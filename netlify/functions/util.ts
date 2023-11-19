@@ -55,15 +55,16 @@ export async function getClient (
         'select * from replicache_client where id = $1',
         [id]
     )
-    if (!row) {
-        return null
-    }
-    const client: Client = {
+
+    if (!row) return null
+
+    const client:Client = {
         id: row.id,
         clientGroupID: row.client_group_id,
         lastMutationID: row.last_mutation_id,
         lastModifiedVersion: row.last_modified_version,
     }
+
     return client
 }
 
