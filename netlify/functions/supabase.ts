@@ -14,15 +14,15 @@ export function getAPIKey () {
 
 export function getConnectionString () {
     const url = getProjectURL()
-    const pass = getDBPass()
+    const password = getDBPassword()
     const host = new URL(url).hostname
     const id = host.split('.')[0]
     return `postgresql://postgres:${encodeURIComponent(
-      pass
+      password
     )}@db.${id}.supabase.co:5432/postgres`
 }
 
-function getDBPass () {
+function getDBPassword () {
     return getEnvVar(
         process.env.SUPABASE_DATABASE_PASSWORD,
         'SUPABASE_DATABASE_PASSWORD'

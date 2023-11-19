@@ -3,7 +3,6 @@ import { Handler, HandlerEvent } from '@netlify/functions'
 import { ReplicacheTransaction } from 'replicache-transaction'
 import { z } from 'zod'
 import Pusher from 'pusher'
-// import Debug from '@nichoth/debug'
 import { Executor, tx, getGlobalVersion, PostgresStorage } from '../db.js'
 import {
     Client,
@@ -16,7 +15,6 @@ import {
 import { getClientGroup, headers } from '../util.js'
 import { mutators } from '../../../src/mutators.js'
 
-// const debug = Debug()
 const authError = {}
 const clientStateNotFoundError = {}
 
@@ -38,8 +36,6 @@ export const handler:Handler = async function (ev:HandlerEvent) {
     if (!ev.body) return { statusCode: 400, headers }
     const userID = (ev.headers.cookie && ev.headers.cookie['userID']) || 'anon'
     const body = JSON.parse(ev.body)
-
-    // debug('Processing push ' + JSON.stringify(body, null, 2))
 
     const push = pushRequestSchema.parse(body)
 

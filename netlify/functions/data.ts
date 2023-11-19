@@ -2,18 +2,18 @@ import type { JSONValue } from 'replicache'
 import type { Executor } from './db.js'
 
 export type ClientGroup = {
-    id: string;
-    userID: string;
+    id:string;
+    userID:string;
 };
 
 export type Client = {
-    id: string;
-    clientGroupID: string;
-    lastMutationID: number;
-    lastModifiedVersion: number;
+    id:string;
+    clientGroupID:string;
+    lastMutationID:number;
+    lastModifiedVersion:number;
 };
 
-export async function getClientGroup (executor: Executor, id: string) {
+export async function getClientGroup (executor:Executor, id:string) {
     const row = await executor.oneOrNone(
         'select * from replicache_client_group where id = $1',
         [id]
@@ -21,7 +21,7 @@ export async function getClientGroup (executor: Executor, id: string) {
     if (!row) {
         return null
     }
-    const cg: ClientGroup = {
+    const cg:ClientGroup = {
         id: row.id,
         userID: row.user_id,
     }
@@ -29,9 +29,9 @@ export async function getClientGroup (executor: Executor, id: string) {
 }
 
 export async function createClientGroup (
-    executor: Executor,
-    id: string,
-    userID: string
+    executor:Executor,
+    id:string,
+    userID:string
 ) {
     await executor.none(
         'insert into replicache_client_group (id, user_id) values ($1, $2)',
@@ -41,9 +41,9 @@ export async function createClientGroup (
 }
 
 export async function getClient (
-    executor: Executor,
-    id: string
-): Promise<Client | null> {
+    executor:Executor,
+    id:string
+):Promise<Client | null> {
     const row = await executor.oneOrNone(
         'select * from replicache_client where id = $1',
         [id]
@@ -61,11 +61,11 @@ export async function getClient (
 }
 
 export async function createClient (
-    executor: Executor,
-    id: string,
-    clientGroupID: string,
+    executor:Executor,
+    id:string,
+    clientGroupID:string,
     version: number
-): Promise<Client> {
+):Promise<Client> {
     await executor.none(
     `insert into replicache_client (
       id, client_group_id, last_mutation_id, last_modified_version
