@@ -39,10 +39,13 @@ export async function State ():Promise<{
         mutators
     })
 
-    const eventUrl = SERVER_URL + '/api/replicache/poke?spaceID=' + spaceID
+    /**
+     * @TODO -- implement server sent events
+     */
 
     // Replicache "poke" using Server-Sent Events.
     // If a "poke" message is received, it will pull from the server.
+    const eventUrl = SERVER_URL + '/api/replicache/poke?spaceID=' + spaceID
     const ev = new EventSource(eventUrl, { withCredentials: false })
     ev.onmessage = async (event) => {
         debug('event', event)

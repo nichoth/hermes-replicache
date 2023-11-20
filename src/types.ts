@@ -8,17 +8,17 @@ export type MessageWithID = Message & { id: string };
 
 // Tracks the current global version of the database. There is only one of
 // these system-wide.
-type ReplicacheSpace = {
+export type ReplicacheSpace = {
     version: number;
 };
 
-type ReplicacheClientGroup = {
+export type ReplicacheClientGroup = {
     // Same as Reset Strategy.
     id: string;
     userID: any;
 };
 
-type ReplicacheClient = {
+export type ReplicacheClient = {
     // Same as Reset Strategy.
     id: string;
     clientGroupID: string;
@@ -29,7 +29,7 @@ type ReplicacheClient = {
 };
 
 // Each of your domain entities will have two extra fields.
-type Todo = {
+export type Todo = {
     // ... fields needed for your application (id, title, complete, etc)
 
     // The global version this entity was last modified at.

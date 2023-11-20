@@ -16,7 +16,7 @@ import { getClientGroup, headers } from '../util.js'
 import { mutators } from '../../../src/mutators.js'
 
 const authError = {}
-const clientStateNotFoundError = {}
+const clientStateNotFoundError = new Error('Client state not found')
 
 const mutationSchema = z.object({
     id: z.number(),
@@ -38,6 +38,9 @@ export const handler:Handler = async function (ev:HandlerEvent) {
     const body = JSON.parse(ev.body)
 
     const push = pushRequestSchema.parse(body)
+
+    console.log('**processing push**', push)
+    console.log('**user id**', userID)
 
     try {
         await processPush(push, userID)
@@ -64,8 +67,8 @@ async function processPush (push:PushRequest, userID:string) {
             userID
         )
 
-        // Since all mutations within one transaction, we can just increment the
-        // global version once.
+        // Since all mutations are within one transaction, we can just increment
+        // the global version once.
         const prevVersion = await getGlobalVersion(executor)
         const nextVersion = prevVersion + 1
 
